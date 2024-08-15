@@ -17,9 +17,14 @@ public class Review {
     private Long id;
 
     private String userName;
+    private String restaurantName;
     private Integer peanutScore;
     private Integer eggScore;
     private Integer dairyScore;
     private String commentary;
 
+    public static enum Status {
+        PENDING, ACCEPTED, REJECTED;
+    }
+    private Status status;
 }
