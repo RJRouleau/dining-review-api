@@ -18,7 +18,7 @@ public class Restaurant {
     @GeneratedValue
     private Long id;
 
-    private List<Integer[]> userScores;
+    //private List<Integer[]> userScores;
 
     private Float overallScore;
     private Float peanutScore;
