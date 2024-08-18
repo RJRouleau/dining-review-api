@@ -46,8 +46,48 @@ public class RestaurantController {
         return new ResponseEntity<>(restaurantRepository.findByState(state), HttpStatus.OK);
     }
 
+    @GetMapping("/{zipcode}/Peanut")
+    public ResponseEntity<Object> getRestaurantByZipcodePeanutDesc(@PathVariable String zipcode){
+        List<Restaurant> restaurants = restaurantRepository.findByZipcodeAndPeanutScoreGreaterThanOrderByPeanutScoreDesc(zipcode, 0.0f);
+        if (restaurants.isEmpty()) {
+            return new ResponseEntity<>("No restaurants were found.", HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(restaurants, HttpStatus.OK);
+    }
+
+    @GetMapping("/{zipcode}/Egg")
+    public ResponseEntity<Object> getRestaurantByZipcodeEggDesc(String zipcode){
+        List<Restaurant> restaurants = restaurantRepository.findByZipcodeAndEggScoreGreaterThanOrderByEggScoreDesc(zipcode, 0.0f);
+        if (restaurants.isEmpty()) {
+            return new ResponseEntity<>("No restaurants were found.", HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(restaurants, HttpStatus.OK);
+    }
+
+    @GetMapping("/{zipcode}/Dairy")
+    public ResponseEntity<Object> getRestaurantByZipcodeDairyDesc(String zipcode){
+        List<Restaurant> restaurants = restaurantRepository.findByZipcodeAndDairyScoreGreaterThanOrderByDairyScoreDesc(zipcode, 0.0f);
+        if (restaurants.isEmpty()) {
+            return new ResponseEntity<>("No restaurants were found.", HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(restaurants, HttpStatus.OK);
+    }
+
+    @GetMapping("/{city}/overall")
+    public ResponseEntity<Object> getRestaurantsByCityOverallScore(String city) {
+        List<Restaurant> restaurants = restaurantRepository.findByCityAndOverallScoreGreaterThanOrderByOverallScoreDesc(city, 0.0f);
+        if (restaurants.isEmpty()) {
+            return new ResponseEntity<>("No restaurants were found.", HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(restaurants, HttpStatus.OK);
+    }
+
     @PostMapping
-    public ResponseEntity<Restaurant> createRestaurant(@RequestBody Restaurant restaurant){
+    public ResponseEntity<Object> createRestaurant(@RequestBody Restaurant restaurant){
+        List<Restaurant> sameNameAndZipRestaurants = restaurantRepository.findByNameAndZipcode(restaurant.getName(), restaurant.getZipcode());
+        if (!sameNameAndZipRestaurants.isEmpty()){
+            return new ResponseEntity<>("Bad Request: Restaurant name must be unique for a given zipcode.", HttpStatus.BAD_REQUEST);
+        }
         Restaurant savedRestaurant = restaurantRepository.save(restaurant);
 
         return new ResponseEntity<>(savedRestaurant, HttpStatus.CREATED);
@@ -100,15 +140,4 @@ public class RestaurantController {
         restaurantRepository.delete(restaurantTBD);
         return new ResponseEntity<>(restaurantTBD, HttpStatus.NO_CONTENT);
     }
-
-
-    /*
-    * TODO:
-    *  - helper function that validates a restaurant name is unique
-    *  - use helper function in createRestaurant() to validate unique restaurant names at creation
-    *  - function that finds all restaurants matching a given zipcode that also have at least one
-    *    user-submitted score for a given allergy, returned in descending order.
-    *
-    *
-    * */
 }

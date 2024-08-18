@@ -7,8 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Entity
 @Data
 @NoArgsConstructor
@@ -17,8 +15,6 @@ public class Restaurant {
     @Id
     @GeneratedValue
     private Long id;
-
-    //private List<Integer[]> userScores;
 
     private Float overallScore;
     private Float peanutScore;
