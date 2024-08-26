@@ -26,7 +26,7 @@ public class RestaurantController {
     @GetMapping("/{id}")
     public ResponseEntity<Restaurant> getRestaurantById(@PathVariable Long id) {
         Optional<Restaurant> optionalRestaurant = restaurantRepository.findById(id);
-        if (!optionalRestaurant.isPresent()){
+        if (optionalRestaurant.isEmpty()){
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         return new ResponseEntity<>(optionalRestaurant.get(), HttpStatus.OK);
@@ -46,39 +46,31 @@ public class RestaurantController {
         return new ResponseEntity<>(restaurantRepository.findByState(state), HttpStatus.OK);
     }
 
-    @GetMapping("/{zipcode}/Peanut")
-    public ResponseEntity<Object> getRestaurantByZipcodePeanutDesc(@PathVariable String zipcode){
-        List<Restaurant> restaurants = restaurantRepository.findByZipcodeAndPeanutScoreGreaterThanOrderByPeanutScoreDesc(zipcode, 0.0f);
-        if (restaurants.isEmpty()) {
-            return new ResponseEntity<>("No restaurants were found.", HttpStatus.NOT_FOUND);
+    @GetMapping("/search")
+    public ResponseEntity<Object> getRestaurantByZipcodeAllergyDesc(
+            @RequestParam(name = "zipcode") String zipcode,
+            @RequestParam(name = "allergy") String allergy
+    ){
+        // validate that the zipcode is formatted correctly.
+        if (!zipcode.matches("\\d{5}")) {
+            return new ResponseEntity<>("Invalid zipcode. Zipcode must be 5 digits.", HttpStatus.BAD_REQUEST);
         }
-        return new ResponseEntity<>(restaurants, HttpStatus.OK);
-    }
-
-    @GetMapping("/{zipcode}/Egg")
-    public ResponseEntity<Object> getRestaurantByZipcodeEggDesc(String zipcode){
-        List<Restaurant> restaurants = restaurantRepository.findByZipcodeAndEggScoreGreaterThanOrderByEggScoreDesc(zipcode, 0.0f);
-        if (restaurants.isEmpty()) {
-            return new ResponseEntity<>("No restaurants were found.", HttpStatus.NOT_FOUND);
+        // validate that the allergy is peanut, egg, or dairy.
+        if (!(allergy.equalsIgnoreCase("peanut") ||
+                allergy.equalsIgnoreCase("egg") ||
+                allergy.equalsIgnoreCase("dairy"))) {
+            return new ResponseEntity<>("Invalid allergy. Allergy must be peanut, egg, or dairy", HttpStatus.BAD_REQUEST);
         }
-        return new ResponseEntity<>(restaurants, HttpStatus.OK);
-    }
-
-    @GetMapping("/{zipcode}/Dairy")
-    public ResponseEntity<Object> getRestaurantByZipcodeDairyDesc(String zipcode){
-        List<Restaurant> restaurants = restaurantRepository.findByZipcodeAndDairyScoreGreaterThanOrderByDairyScoreDesc(zipcode, 0.0f);
-        if (restaurants.isEmpty()) {
-            return new ResponseEntity<>("No restaurants were found.", HttpStatus.NOT_FOUND);
-        }
-        return new ResponseEntity<>(restaurants, HttpStatus.OK);
-    }
-
-    @GetMapping("/{city}/overall")
-    public ResponseEntity<Object> getRestaurantsByCityOverallScore(String city) {
-        List<Restaurant> restaurants = restaurantRepository.findByCityAndOverallScoreGreaterThanOrderByOverallScoreDesc(city, 0.0f);
-        if (restaurants.isEmpty()) {
-            return new ResponseEntity<>("No restaurants were found.", HttpStatus.NOT_FOUND);
-        }
+        // call the appropriate method for the allergy
+        List<Restaurant> restaurants = switch (allergy.toLowerCase()) {
+            case "peanut" ->
+                    restaurantRepository.findByZipcodeAndPeanutScoreGreaterThanOrderByPeanutScoreDesc(zipcode, 0.f);
+            case "egg" ->
+                    restaurantRepository.findByZipcodeAndEggScoreGreaterThanOrderByEggScoreDesc(zipcode, 0.f);
+            case "dairy" ->
+                    restaurantRepository.findByZipcodeAndDairyScoreGreaterThanOrderByDairyScoreDesc(zipcode, 0.f);
+            default -> null;
+        };
         return new ResponseEntity<>(restaurants, HttpStatus.OK);
     }
 
@@ -88,6 +80,7 @@ public class RestaurantController {
         if (!sameNameAndZipRestaurants.isEmpty()){
             return new ResponseEntity<>("Bad Request: Restaurant name must be unique for a given zipcode.", HttpStatus.BAD_REQUEST);
         }
+        // TODO: if scores are not null, calculate the overall score
         Restaurant savedRestaurant = restaurantRepository.save(restaurant);
 
         return new ResponseEntity<>(savedRestaurant, HttpStatus.CREATED);
@@ -96,7 +89,7 @@ public class RestaurantController {
     @PutMapping("/{id}")
     public ResponseEntity<Restaurant> updateRestaurant(@PathVariable Long id, @RequestBody Restaurant restaurantDetails) {
         Optional<Restaurant> optionalRestaurant = restaurantRepository.findById(id);
-        if (!optionalRestaurant.isPresent()) {
+        if (optionalRestaurant.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         Restaurant restaurant = optionalRestaurant.get();
@@ -125,6 +118,7 @@ public class RestaurantController {
         if (restaurantDetails.getZipcode() != null) {
             restaurant.setZipcode(restaurantDetails.getZipcode());
         }
+        // TODO: update overall score
         Restaurant updatedRestaurant = restaurantRepository.save(restaurant);
 
         return new ResponseEntity<>(updatedRestaurant, HttpStatus.OK);
@@ -133,7 +127,7 @@ public class RestaurantController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Restaurant> deleteRestaurant(@PathVariable Long id) {
         Optional<Restaurant> optionalRestaurant = restaurantRepository.findById(id);
-        if (!optionalRestaurant.isPresent()){
+        if (optionalRestaurant.isEmpty()){
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         Restaurant restaurantTBD = optionalRestaurant.get();

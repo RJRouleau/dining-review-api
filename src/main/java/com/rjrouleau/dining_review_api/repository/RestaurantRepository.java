@@ -10,9 +10,10 @@ public interface RestaurantRepository extends CrudRepository<Restaurant, Long> {
     List<Restaurant> findByZipcode(String zipcode);
     List<Restaurant> findByCity(String city);
     List<Restaurant> findByState(String state);
-    List<Restaurant> findByCityAndOverallScoreGreaterThanOrderByOverallScoreDesc(String city, Float overallScore);
     List<Restaurant> findByZipcodeAndPeanutScoreGreaterThanOrderByPeanutScoreDesc(String zipcode, Float peanutScore);
     List<Restaurant> findByZipcodeAndEggScoreGreaterThanOrderByEggScoreDesc(String zipcode, Float eggScore);
     List<Restaurant> findByZipcodeAndDairyScoreGreaterThanOrderByDairyScoreDesc(String zipcode, Float dairyScore);
 
 }
+
+
