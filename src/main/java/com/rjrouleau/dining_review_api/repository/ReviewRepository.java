@@ -9,4 +9,5 @@ import java.util.List;
 public interface ReviewRepository extends CrudRepository<Review, Long> {
     List<Review> findByStatus(Status status);
     List<Review> findByRestaurantNameAndStatus(String restaurantName, Status status);
+    List<Review> findByUserName(String userName);
 }
