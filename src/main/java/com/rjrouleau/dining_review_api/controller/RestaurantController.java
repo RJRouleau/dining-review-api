@@ -46,6 +46,7 @@ public class RestaurantController {
         return new ResponseEntity<>(restaurantRepository.findByState(state), HttpStatus.OK);
     }
 
+    // Searches for restaurants by zipcode and allergy score in descending order.
     @GetMapping("/search")
     public ResponseEntity<Object> getRestaurantByZipcodeAllergyDesc(
             @RequestParam(name = "zipcode") String zipcode,
@@ -53,41 +54,57 @@ public class RestaurantController {
     ){
         // validate that the zipcode is formatted correctly.
         if (!zipcode.matches("\\d{5}")) {
-            return new ResponseEntity<>("Invalid zipcode. Zipcode must be 5 digits.", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(
+                    "Invalid zipcode. Zipcode must be 5 digits.",
+                    HttpStatus.BAD_REQUEST
+            );
         }
         // validate that the allergy is peanut, egg, or dairy.
         if (!(allergy.equalsIgnoreCase("peanut") ||
                 allergy.equalsIgnoreCase("egg") ||
                 allergy.equalsIgnoreCase("dairy"))) {
-            return new ResponseEntity<>("Invalid allergy. Allergy must be peanut, egg, or dairy", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(
+                    "Invalid allergy. Allergy must be peanut, egg, or dairy",
+                    HttpStatus.BAD_REQUEST
+            );
         }
-        // call the appropriate method for the allergy
+        // call the appropriate method for the allergy.
         List<Restaurant> restaurants = switch (allergy.toLowerCase()) {
             case "peanut" ->
-                    restaurantRepository.findByZipcodeAndPeanutScoreGreaterThanOrderByPeanutScoreDesc(zipcode, 0.f);
+                    restaurantRepository.
+                            findByZipcodeAndPeanutScoreGreaterThanOrderByPeanutScoreDesc(zipcode, 0.f);
             case "egg" ->
-                    restaurantRepository.findByZipcodeAndEggScoreGreaterThanOrderByEggScoreDesc(zipcode, 0.f);
+                    restaurantRepository.
+                            findByZipcodeAndEggScoreGreaterThanOrderByEggScoreDesc(zipcode, 0.f);
             case "dairy" ->
-                    restaurantRepository.findByZipcodeAndDairyScoreGreaterThanOrderByDairyScoreDesc(zipcode, 0.f);
-            default -> null;
+                    restaurantRepository.
+                            findByZipcodeAndDairyScoreGreaterThanOrderByDairyScoreDesc(zipcode, 0.f);
         };
         return new ResponseEntity<>(restaurants, HttpStatus.OK);
     }
 
     @PostMapping
     public ResponseEntity<Object> createRestaurant(@RequestBody Restaurant restaurant){
-        List<Restaurant> sameNameAndZipRestaurants = restaurantRepository.findByNameAndZipcode(restaurant.getName(), restaurant.getZipcode());
+        // check for existing restaurant with this name and return bad request if found.
+        List<Restaurant> sameNameAndZipRestaurants =
+                restaurantRepository.findByNameAndZipcode(restaurant.getName(), restaurant.getZipcode());
         if (!sameNameAndZipRestaurants.isEmpty()){
-            return new ResponseEntity<>("Bad Request: Restaurant name must be unique for a given zipcode.", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(
+                    "Bad Request: Restaurant name must be unique for a given zipcode.",
+                    HttpStatus.BAD_REQUEST
+            );
         }
-        // TODO: if scores are not null, calculate the overall score
         Restaurant savedRestaurant = restaurantRepository.save(restaurant);
 
         return new ResponseEntity<>(savedRestaurant, HttpStatus.CREATED);
     }
 
+    // Updates restaurant fields only if provided, and recalculates overall score.
     @PutMapping("/{id}")
-    public ResponseEntity<Restaurant> updateRestaurant(@PathVariable Long id, @RequestBody Restaurant restaurantDetails) {
+    public ResponseEntity<Restaurant> updateRestaurant(
+            @PathVariable Long id,
+            @RequestBody Restaurant restaurantDetails
+    ) {
         Optional<Restaurant> optionalRestaurant = restaurantRepository.findById(id);
         if (optionalRestaurant.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -118,7 +135,7 @@ public class RestaurantController {
         if (restaurantDetails.getZipcode() != null) {
             restaurant.setZipcode(restaurantDetails.getZipcode());
         }
-        // TODO: update overall score
+        updateOverallScore(restaurant);
         Restaurant updatedRestaurant = restaurantRepository.save(restaurant);
 
         return new ResponseEntity<>(updatedRestaurant, HttpStatus.OK);
@@ -133,5 +150,15 @@ public class RestaurantController {
         Restaurant restaurantTBD = optionalRestaurant.get();
         restaurantRepository.delete(restaurantTBD);
         return new ResponseEntity<>(restaurantTBD, HttpStatus.NO_CONTENT);
+    }
+
+    // Calculates the overall score as the average of available allergy scores.
+    private void updateOverallScore(Restaurant restaurant) {
+        Float peanutScore = restaurant.getPeanutScore() != null ? restaurant.getPeanutScore() : 0.f;
+        Float eggScore = restaurant.getEggScore() != null ? restaurant.getEggScore() : 0.f;
+        Float dairyScore = restaurant.getDairyScore() != null ? restaurant.getDairyScore() : 0.f;
+
+        Float overallScore = (peanutScore + eggScore + dairyScore) / 3.f;
+        restaurant.setOverallScore(overallScore);
     }
 }
