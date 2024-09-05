@@ -1,5 +1,6 @@
 package com.rjrouleau.dining_review_api.controller;
 
+import com.rjrouleau.dining_review_api.AppUtils;
 import com.rjrouleau.dining_review_api.model.Restaurant;
 import com.rjrouleau.dining_review_api.repository.RestaurantRepository;
 import org.springframework.web.bind.annotation.*;
@@ -46,7 +47,8 @@ public class RestaurantController {
         return new ResponseEntity<>(restaurantRepository.findByState(state), HttpStatus.OK);
     }
 
-    // Searches for restaurants by zipcode and allergy score in descending order.
+    // Searches for restaurants by zipcode and allergy score in descending order. If allergy is invalid,
+    // all restaurants for that zipcode are returned.
     @GetMapping("/search")
     public ResponseEntity<Object> getRestaurantByZipcodeAllergyDesc(
             @RequestParam(name = "zipcode") String zipcode,
@@ -79,6 +81,9 @@ public class RestaurantController {
             case "dairy" ->
                     restaurantRepository.
                             findByZipcodeAndDairyScoreGreaterThanOrderByDairyScoreDesc(zipcode, 0.f);
+            default ->
+                    restaurantRepository.
+                            findByZipcode(zipcode);
         };
         return new ResponseEntity<>(restaurants, HttpStatus.OK);
     }
@@ -111,31 +116,39 @@ public class RestaurantController {
         }
         Restaurant restaurant = optionalRestaurant.get();
 
-        if (restaurantDetails.getOverallScore() != null) {
-            restaurant.setOverallScore(restaurantDetails.getOverallScore());
-        }
-        if (restaurantDetails.getPeanutScore() != null) {
-            restaurant.setPeanutScore(restaurantDetails.getPeanutScore());
-        }
-        if (restaurantDetails.getEggScore() != null) {
-            restaurant.setEggScore(restaurantDetails.getEggScore());
-        }
-        if (restaurantDetails.getDairyScore() != null) {
-            restaurant.setDairyScore(restaurantDetails.getDairyScore());
-        }
-        if (restaurantDetails.getName() != null) {
-            restaurant.setName(restaurantDetails.getName());
-        }
-        if (restaurantDetails.getCity() != null) {
-            restaurant.setCity(restaurantDetails.getCity());
-        }
-        if (restaurantDetails.getState() != null) {
-            restaurant.setState(restaurantDetails.getState());
-        }
-        if (restaurantDetails.getZipcode() != null) {
-            restaurant.setZipcode(restaurantDetails.getZipcode());
-        }
-        updateOverallScore(restaurant);
+//        if (restaurantDetails.getOverallScore() != null) {
+//            restaurant.setOverallScore(restaurantDetails.getOverallScore());
+//        }
+//        if (restaurantDetails.getPeanutScore() != null) {
+//            restaurant.setPeanutScore(restaurantDetails.getPeanutScore());
+//        }
+//        if (restaurantDetails.getEggScore() != null) {
+//            restaurant.setEggScore(restaurantDetails.getEggScore());
+//        }
+//        if (restaurantDetails.getDairyScore() != null) {
+//            restaurant.setDairyScore(restaurantDetails.getDairyScore());
+//        }
+//        if (restaurantDetails.getName() != null) {
+//            restaurant.setName(restaurantDetails.getName());
+//        }
+//        if (restaurantDetails.getCity() != null) {
+//            restaurant.setCity(restaurantDetails.getCity());
+//        }
+//        if (restaurantDetails.getState() != null) {
+//            restaurant.setState(restaurantDetails.getState());
+//        }
+//        if (restaurantDetails.getZipcode() != null) {
+//            restaurant.setZipcode(restaurantDetails.getZipcode());
+//        }
+        AppUtils.setIfNotNull(restaurantDetails::getPeanutScore, restaurant::setPeanutScore);
+        AppUtils.setIfNotNull(restaurantDetails::getEggScore, restaurant::setEggScore);
+        AppUtils.setIfNotNull(restaurantDetails::getDairyScore, restaurant::setDairyScore);
+        AppUtils.setIfNotNull(restaurantDetails::getName, restaurant::setName);
+        AppUtils.setIfNotNull(restaurantDetails::getCity, restaurant::setCity);
+        AppUtils.setIfNotNull(restaurantDetails::getState, restaurant::setState);
+        AppUtils.setIfNotNull(restaurantDetails::getZipcode, restaurant::setZipcode);
+        //updateOverallScore(restaurant);
+        restaurant.setOverallScore(AppUtils.calculateOverallScore(restaurant));
         Restaurant updatedRestaurant = restaurantRepository.save(restaurant);
 
         return new ResponseEntity<>(updatedRestaurant, HttpStatus.OK);
