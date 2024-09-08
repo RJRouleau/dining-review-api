@@ -131,61 +131,61 @@ public class ReviewController {
     }
 
     private void updateOverallScores(String restaurantName){
-        List<Review> reviews = reviewRepository.findByRestaurantNameAndStatus(restaurantName, Review.Status.ACCEPTED);
-        List<Restaurant> restaurants = restaurantRepository.findByName(restaurantName);
-        Restaurant updatedRestaurant = restaurants.getFirst();
-
-        Float peanutSum = 0.f;
-        int peanutCount = 0;
-        Float eggSum = 0.f;
-        int eggCount = 0;
-        Float dairySum = 0.f;
-        int dairyCount = 0;
-        for (Review review : reviews){
-            if (review.getPeanutScore() != null) {
-                peanutCount++;
-                peanutSum += review.getPeanutScore();
-            }
-            if (review.getEggScore() != null) {
-                eggCount++;
-                eggSum += review.getEggScore();
-            }
-            if (review.getDairyScore() != null) {
-                dairyCount++;
-                dairySum += review.getDairyScore();
-            }
-        }
-
-        if (peanutCount > 0) {
-            updatedRestaurant.setPeanutScore(peanutSum / peanutCount);
-        } else {
-            updatedRestaurant.setPeanutScore(null);
-        }
-        if (eggCount > 0){
-            updatedRestaurant.setEggScore(eggSum / eggCount);
-        } else {
-            updatedRestaurant.setEggScore(null);
-        }
-        if (dairyCount > 0){
-            updatedRestaurant.setDairyScore(dairySum / dairyCount);
-        } else {
-            updatedRestaurant.setDairyScore(null);
-        }
-
-        Float overallSum = 0.f;
-        int overallCount = 0;
-        if (updatedRestaurant.getPeanutScore() != null){
-            overallCount++;
-            overallSum += updatedRestaurant.getPeanutScore();
-        }
-        if (updatedRestaurant.getEggScore() != null){
-            overallCount++;
-            overallSum += updatedRestaurant.getEggScore();
-        }
-        if (updatedRestaurant.getDairyScore() != null){
-            overallCount++;
-            overallSum += updatedRestaurant.getDairyScore();
-        }
-        updatedRestaurant.setOverallScore(overallSum / overallCount);
+//        List<Review> reviews = reviewRepository.findByRestaurantNameAndStatus(restaurantName, Review.Status.ACCEPTED);
+//        List<Restaurant> restaurants = restaurantRepository.findByName(restaurantName);
+//        Restaurant updatedRestaurant = restaurants.getFirst();
+//
+//        Float peanutSum = 0.f;
+//        int peanutCount = 0;
+//        Float eggSum = 0.f;
+//        int eggCount = 0;
+//        Float dairySum = 0.f;
+//        int dairyCount = 0;
+//        for (Review review : reviews){
+//            if (review.getPeanutScore() != null) {
+//                peanutCount++;
+//                peanutSum += review.getPeanutScore();
+//            }
+//            if (review.getEggScore() != null) {
+//                eggCount++;
+//                eggSum += review.getEggScore();
+//            }
+//            if (review.getDairyScore() != null) {
+//                dairyCount++;
+//                dairySum += review.getDairyScore();
+//            }
+//        }
+//
+//        if (peanutCount > 0) {
+//            updatedRestaurant.setPeanutScore(peanutSum / peanutCount);
+//        } else {
+//            updatedRestaurant.setPeanutScore(null);
+//        }
+//        if (eggCount > 0){
+//            updatedRestaurant.setEggScore(eggSum / eggCount);
+//        } else {
+//            updatedRestaurant.setEggScore(null);
+//        }
+//        if (dairyCount > 0){
+//            updatedRestaurant.setDairyScore(dairySum / dairyCount);
+//        } else {
+//            updatedRestaurant.setDairyScore(null);
+//        }
+//
+//        Float overallSum = 0.f;
+//        int overallCount = 0;
+//        if (updatedRestaurant.getPeanutScore() != null){
+//            overallCount++;
+//            overallSum += updatedRestaurant.getPeanutScore();
+//        }
+//        if (updatedRestaurant.getEggScore() != null){
+//            overallCount++;
+//            overallSum += updatedRestaurant.getEggScore();
+//        }
+//        if (updatedRestaurant.getDairyScore() != null){
+//            overallCount++;
+//            overallSum += updatedRestaurant.getDairyScore();
+//        }
+//        updatedRestaurant.setOverallScore(overallSum / overallCount);
     }
 }
