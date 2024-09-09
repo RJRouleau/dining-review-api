@@ -4,11 +4,9 @@ import com.rjrouleau.dining_review_api.AppUtils;
 import com.rjrouleau.dining_review_api.model.User;
 import com.rjrouleau.dining_review_api.repository.UserRepository;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -20,12 +18,8 @@ public class UserController {
         this.userRepository = userRepository;
     }
 
-    @GetMapping
+    @GetMapping("/{userName}")
     public ResponseEntity<Object> getUserByUserName(@PathVariable String userName) {
-//        List<User> user = userRepository.findByUserName(userName);
-//        if (user.isEmpty()){
-//            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-//        }
         Optional<User> userOptional = userRepository.findByUserName(userName);
         if (userOptional.isEmpty()){
             return new ResponseEntity<>("User not found.", HttpStatus.NOT_FOUND);
@@ -40,11 +34,6 @@ public class UserController {
     // Creates a new user and verifies that the userName is unique.
     @PostMapping
     public ResponseEntity<Object> createUser(@RequestBody User user){
-        // check for existing user with this name and return bad request if found.
-//        List<User> temp = userRepository.findByUserName(user.getUserName());
-//        if (!temp.isEmpty()){
-//            return new ResponseEntity<Object>("Username is taken. Please choose a unique username.", HttpStatus.BAD_REQUEST);
-//        }
         Optional<User> userOptional = userRepository.findByUserName(user.getUserName());
         if (userOptional.isPresent()){
             return new ResponseEntity<Object>("Username is taken. Please choose a unique username.", HttpStatus.BAD_REQUEST);
@@ -57,7 +46,7 @@ public class UserController {
 
     // updates a user profile without changing the username. If a new username is provided, it is ignored and the
     // remaining fields are still updated.
-    @PutMapping
+    @PutMapping("/{userName}")
     public ResponseEntity<Object> updateUser(
             @PathVariable String userName,
             @RequestBody User userDetails
@@ -79,7 +68,7 @@ public class UserController {
         return new ResponseEntity<>(updatedUser, HttpStatus.OK);
     }
 
-    @DeleteMapping
+    @DeleteMapping("/{userName}")
     public ResponseEntity<Object> deleteUser(@PathVariable String userName){
         Optional<User> userOptional = userRepository.findByUserName(userName);
         if (userOptional.isEmpty()){
