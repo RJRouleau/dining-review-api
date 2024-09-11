@@ -26,8 +26,15 @@ public class ReviewController {
         this.restaurantRepository = restaurantRepository;
     }
 
-    @GetMapping
-    public ResponseEntity<Review> getReviewById(Long id){
+    @PostMapping
+    public ResponseEntity<Review> createReview(@RequestBody Review review){
+        // TODO: validate review.commentary length, content
+        Review savedReview = reviewRepository.save(review);
+        return new ResponseEntity<>(savedReview, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Review> getReviewById(@PathVariable Long id){
         Optional<Review> optionalReview = reviewRepository.findById(id);
         if (optionalReview.isEmpty()){
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -36,8 +43,8 @@ public class ReviewController {
         return new ResponseEntity<>(review, HttpStatus.OK);
     }
 
-    @GetMapping("/restaurant")
-    public ResponseEntity<List<Review>> getApprovedReviewsByRestaurantName(String restaurantName){
+    @GetMapping("/restaurant/{restaurantName}")
+    public ResponseEntity<List<Review>> getApprovedReviewsByRestaurantName(@PathVariable String restaurantName){
         List<Review> reviews = reviewRepository.findByRestaurantNameAndStatus(restaurantName, Review.Status.ACCEPTED);
         if (reviews.isEmpty()){
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -45,8 +52,8 @@ public class ReviewController {
         return new ResponseEntity<>(reviews, HttpStatus.OK);
     }
 
-    @GetMapping("/user")
-    public ResponseEntity<List<Review>> getReviewsByUserName(String userName){
+    @GetMapping("/user/{userName}")
+    public ResponseEntity<List<Review>> getReviewsByUserName(@PathVariable String userName){
         List<Review> reviews = reviewRepository.findByUserName(userName);
         if (reviews.isEmpty()){
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -54,24 +61,8 @@ public class ReviewController {
         return new ResponseEntity<>(reviews, HttpStatus.OK);
     }
 
-    @GetMapping("/admin")
-    public ResponseEntity<List<Review>> getReviewsPendingApproval(){
-        List<Review> reviews = reviewRepository.findByStatus(Review.Status.PENDING);
-        if (reviews.isEmpty()){
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-        return new ResponseEntity<>(reviews, HttpStatus.OK);
-    }
-
-    @PostMapping
-    public ResponseEntity<Review> createReview(@RequestBody Review review){
-        // TODO: validate review.commentary length, content
-        Review savedReview = reviewRepository.save(review);
-        return new ResponseEntity<>(savedReview, HttpStatus.CREATED);
-    }
-
     // Updates a review's scores and commentary. Status is changed to PENDING.
-    @PutMapping
+    @PutMapping("/{id}")
     public ResponseEntity<Object> updateReview(
             @PathVariable Long id,
             @RequestBody Review reviewDetails
@@ -92,11 +83,20 @@ public class ReviewController {
         return new ResponseEntity<>(updatedReview, HttpStatus.OK);
     }
 
+    @GetMapping("/admin")
+    public ResponseEntity<List<Review>> getReviewsPendingApproval(){
+        List<Review> reviews = reviewRepository.findByStatus(Review.Status.PENDING);
+        if (reviews.isEmpty()){
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(reviews, HttpStatus.OK);
+    }
+
     // Updates the status of a review and recalculates overall score if approved. Provide status as a string path
     // variable. If status is not accepted or rejected, review is set to pending.
-    @PutMapping("/admin")
-    public ResponseEntity<Object> updateReviewStatus(@PathVariable Long reviewId, @PathVariable String status){
-        Optional<Review> reviewOptional = reviewRepository.findById(reviewId);
+    @PutMapping("/admin/{id}")
+    public ResponseEntity<Object> updateReviewStatus(@PathVariable Long id, @RequestBody String status){
+        Optional<Review> reviewOptional = reviewRepository.findById(id);
         if (reviewOptional.isEmpty()){
             return new ResponseEntity<>("Review not found.", HttpStatus.NOT_FOUND);
         }
@@ -117,7 +117,7 @@ public class ReviewController {
         return new ResponseEntity<>(updatedReview, HttpStatus.OK);
     }
 
-    @DeleteMapping
+    @DeleteMapping("/{id}")
     public ResponseEntity<Object> deleteReview(@PathVariable Long id){
         Optional<Review> reviewOptional = reviewRepository.findById(id);
         if (reviewOptional.isEmpty()){

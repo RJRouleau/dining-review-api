@@ -19,9 +19,25 @@ public class RestaurantController {
         this.restaurantRepository = restaurantRepository;
     }
 
+    @PostMapping
+    public ResponseEntity<Object> createRestaurant(@RequestBody Restaurant restaurant){
+        // check for existing restaurant with this name and return bad request if found.
+        List<Restaurant> sameNameAndZipRestaurants =
+                restaurantRepository.findByNameAndZipcode(restaurant.getName(), restaurant.getZipcode());
+        if (!sameNameAndZipRestaurants.isEmpty()){
+            return new ResponseEntity<>(
+                    "Bad Request: Restaurant name must be unique for a given zipcode.",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+        Restaurant savedRestaurant = restaurantRepository.save(restaurant);
+
+        return new ResponseEntity<>(savedRestaurant, HttpStatus.CREATED);
+    }
+
     @GetMapping
-    public Iterable<Restaurant> getRestaurants() {
-        return restaurantRepository.findAll();
+    public ResponseEntity<Iterable<Restaurant>> getRestaurants() {
+        return new ResponseEntity<>(restaurantRepository.findAll(), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
@@ -66,7 +82,7 @@ public class RestaurantController {
                 allergy.equalsIgnoreCase("egg") ||
                 allergy.equalsIgnoreCase("dairy"))) {
             return new ResponseEntity<>(
-                    "Invalid allergy. Allergy must be peanut, egg, or dairy",
+                    "Invalid allergy. Allergy must be peanut, egg, or dairy.",
                     HttpStatus.BAD_REQUEST
             );
         }
@@ -88,22 +104,6 @@ public class RestaurantController {
         return new ResponseEntity<>(restaurants, HttpStatus.OK);
     }
 
-    @PostMapping
-    public ResponseEntity<Object> createRestaurant(@RequestBody Restaurant restaurant){
-        // check for existing restaurant with this name and return bad request if found.
-        List<Restaurant> sameNameAndZipRestaurants =
-                restaurantRepository.findByNameAndZipcode(restaurant.getName(), restaurant.getZipcode());
-        if (!sameNameAndZipRestaurants.isEmpty()){
-            return new ResponseEntity<>(
-                    "Bad Request: Restaurant name must be unique for a given zipcode.",
-                    HttpStatus.BAD_REQUEST
-            );
-        }
-        Restaurant savedRestaurant = restaurantRepository.save(restaurant);
-
-        return new ResponseEntity<>(savedRestaurant, HttpStatus.CREATED);
-    }
-
     // Updates restaurant fields only if provided, and recalculates overall score.
     @PutMapping("/{id}")
     public ResponseEntity<Restaurant> updateRestaurant(
@@ -116,30 +116,6 @@ public class RestaurantController {
         }
         Restaurant restaurant = optionalRestaurant.get();
 
-//        if (restaurantDetails.getOverallScore() != null) {
-//            restaurant.setOverallScore(restaurantDetails.getOverallScore());
-//        }
-//        if (restaurantDetails.getPeanutScore() != null) {
-//            restaurant.setPeanutScore(restaurantDetails.getPeanutScore());
-//        }
-//        if (restaurantDetails.getEggScore() != null) {
-//            restaurant.setEggScore(restaurantDetails.getEggScore());
-//        }
-//        if (restaurantDetails.getDairyScore() != null) {
-//            restaurant.setDairyScore(restaurantDetails.getDairyScore());
-//        }
-//        if (restaurantDetails.getName() != null) {
-//            restaurant.setName(restaurantDetails.getName());
-//        }
-//        if (restaurantDetails.getCity() != null) {
-//            restaurant.setCity(restaurantDetails.getCity());
-//        }
-//        if (restaurantDetails.getState() != null) {
-//            restaurant.setState(restaurantDetails.getState());
-//        }
-//        if (restaurantDetails.getZipcode() != null) {
-//            restaurant.setZipcode(restaurantDetails.getZipcode());
-//        }
         AppUtils.setIfNotNull(restaurantDetails::getPeanutScore, restaurant::setPeanutScore);
         AppUtils.setIfNotNull(restaurantDetails::getEggScore, restaurant::setEggScore);
         AppUtils.setIfNotNull(restaurantDetails::getDairyScore, restaurant::setDairyScore);

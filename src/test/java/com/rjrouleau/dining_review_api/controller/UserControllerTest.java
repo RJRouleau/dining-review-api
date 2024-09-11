@@ -16,8 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Optional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.mockito.BDDMockito.given;
 
 
@@ -51,7 +50,7 @@ public class UserControllerTest {
 
     @Test
     void UserController_CreateUser_ReturnUser() throws Exception {
-        String userJSON = objectMapper.writeValueAsString(user);
+        String expectedJson = objectMapper.writeValueAsString(user);
 
         given(userRepository.findByUserName("testUser")).willReturn(Optional.empty());
         given(userRepository.save(Mockito.any(User.class))).willReturn(user);
@@ -59,20 +58,36 @@ public class UserControllerTest {
         mockMvc.perform(
                 post("/user")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(userJSON)
+                        .content(expectedJson)
                 )
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.userName").value(user.getUserName()))
-                .andExpect(jsonPath("$.city").value(user.getCity()))
-                .andExpect(jsonPath("$.state").value(user.getState()))
-                .andExpect(jsonPath("$.zipcode").value(user.getZipcode()))
-                .andExpect(jsonPath("$.peanutAllergy").value(user.getPeanutAllergy()))
-                .andExpect(jsonPath("$.eggAllergy").value(user.getEggAllergy()))
-                .andExpect(jsonPath("$.dairyAllergy").value(user.getDairyAllergy()));
+                .andExpect(content().json(expectedJson));
+        Mockito.verify(userRepository, Mockito.times(1)).findByUserName("testUser");
+        Mockito.verify(userRepository, Mockito.times(1)).save(user);
+    }
+
+    @Test
+    void UserController_CreateUser_ReturnNameTaken() throws Exception {
+        String invalidUser = objectMapper.writeValueAsString(user);
+
+        given(userRepository.findByUserName(Mockito.anyString())).willReturn(Optional.of(user));
+
+        mockMvc.perform(
+                post("/user")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidUser)
+        )
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Username is taken. Please choose a unique username."));
+
+        Mockito.verify(userRepository, Mockito.times(1)).findByUserName(Mockito.anyString());
+        Mockito.verify(userRepository, Mockito.times(0)).save(Mockito.any(User.class));
     }
 
     @Test
     void UserController_GetUserByUserName_ReturnUser() throws Exception {
+        String expectedJson = objectMapper.writeValueAsString(user);
+
         given(userRepository.findByUserName(user.getUserName())).willReturn(Optional.of(user));
 
         mockMvc.perform(
@@ -80,13 +95,25 @@ public class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
         )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userName").value(user.getUserName()))
-                .andExpect(jsonPath("$.city").value(user.getCity()))
-                .andExpect(jsonPath("$.state").value(user.getState()))
-                .andExpect(jsonPath("$.zipcode").value(user.getZipcode()))
-                .andExpect(jsonPath("$.peanutAllergy").value(user.getPeanutAllergy()))
-                .andExpect(jsonPath("$.eggAllergy").value(user.getEggAllergy()))
-                .andExpect(jsonPath("$.dairyAllergy").value(user.getDairyAllergy()));
+                .andExpect(content().json(expectedJson));
+
+        Mockito.verify(userRepository, Mockito.times(1)).findByUserName(user.getUserName());
+    }
+
+    @Test
+    void UserController_GetUserByUserName_ReturnNotFound() throws Exception {
+        String expectedJson = objectMapper.writeValueAsString(user);
+
+        given(userRepository.findByUserName(Mockito.anyString())).willReturn(Optional.empty());
+
+        mockMvc.perform(
+                        get("/user/" + user.getUserName())
+                                .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isNotFound())
+                .andExpect(content().string("User not found."));
+
+        Mockito.verify(userRepository, Mockito.times(1)).findByUserName(user.getUserName());
     }
 
     @Test
@@ -101,7 +128,7 @@ public class UserControllerTest {
                 .dairyAllergy(false)
                 .build();
 
-        String userDetails = objectMapper.writeValueAsString(updatedUser);
+        String expectedJson = objectMapper.writeValueAsString(updatedUser);
 
         given(userRepository.findByUserName(user.getUserName())).willReturn(Optional.of(user));
         given(userRepository.save(Mockito.any(User.class))).willReturn(updatedUser);
@@ -109,33 +136,62 @@ public class UserControllerTest {
         mockMvc.perform(
                 put("/user/" + user.getUserName())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(userDetails)
+                        .content(expectedJson)
         )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userName").value(updatedUser.getUserName()))
-                .andExpect(jsonPath("$.city").value(updatedUser.getCity()))
-                .andExpect(jsonPath("$.state").value(updatedUser.getState()))
-                .andExpect(jsonPath("$.zipcode").value(updatedUser.getZipcode()))
-                .andExpect(jsonPath("$.peanutAllergy").value(updatedUser.getPeanutAllergy()))
-                .andExpect(jsonPath("$.eggAllergy").value(updatedUser.getEggAllergy()))
-                .andExpect(jsonPath("$.dairyAllergy").value(updatedUser.getDairyAllergy()));
+                .andExpect(content().json(expectedJson));
+
+        Mockito.verify(userRepository, Mockito.times(1)).findByUserName(user.getUserName());
+        Mockito.verify(userRepository, Mockito.times(1)).save(user);
+    }
+
+    @Test
+    void UserController_UpdateUser_ReturnNotFound() throws Exception {
+        String invalidUser = objectMapper.writeValueAsString(user);
+
+        given(userRepository.findByUserName(user.getUserName())).willReturn(Optional.empty());
+
+        mockMvc.perform(
+                        put("/user/" + user.getUserName())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(invalidUser)
+                )
+                .andExpect(status().isNotFound())
+                .andExpect(content().string("User not found."));
+
+        Mockito.verify(userRepository, Mockito.times(1)).findByUserName(user.getUserName());
+        Mockito.verify(userRepository, Mockito.times(0)).save(user);
     }
 
     @Test
     public void UserController_DeleteUser_ReturnUser() throws Exception {
-        given(userRepository.findByUserName(user.getUserName())).willReturn(Optional.of(user));
+        String expectedJson = objectMapper.writeValueAsString(user);
+
+        given(userRepository.findByUserName(Mockito.anyString())).willReturn(Optional.of(user));
 
         mockMvc.perform(
                 delete("/user/" + user.getUserName())
                         .contentType(MediaType.APPLICATION_JSON)
         )
                 .andExpect(status().isNoContent())
-                .andExpect(jsonPath("$.userName").value(user.getUserName()))
-                .andExpect(jsonPath("$.city").value(user.getCity()))
-                .andExpect(jsonPath("$.state").value(user.getState()))
-                .andExpect(jsonPath("$.zipcode").value(user.getZipcode()))
-                .andExpect(jsonPath("$.peanutAllergy").value(user.getPeanutAllergy()))
-                .andExpect(jsonPath("$.eggAllergy").value(user.getEggAllergy()))
-                .andExpect(jsonPath("$.dairyAllergy").value(user.getDairyAllergy()));
+                .andExpect(content().json(expectedJson));
+
+        Mockito.verify(userRepository, Mockito.times(1)).findByUserName(user.getUserName());
+    }
+
+    @Test
+    public void UserController_DeleteUser_ReturnNotFound() throws Exception {
+        String invalidUser = objectMapper.writeValueAsString(user);
+
+        given(userRepository.findByUserName(Mockito.anyString())).willReturn(Optional.empty());
+
+        mockMvc.perform(
+                        delete("/user/" + user.getUserName())
+                                .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isNotFound())
+                .andExpect(content().string("User not found."));
+
+        Mockito.verify(userRepository, Mockito.times(1)).findByUserName(user.getUserName());
     }
 }
