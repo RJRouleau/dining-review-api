@@ -75,9 +75,9 @@ compatible they are with peanut, egg, or dairy allergies. Newly created reviews 
   "eggAllergy": "boolean",
   "dairyAllergy": "boolean"
   }
-  - **Responses:** 
-    - `201 Created: Returns the newly created user.`
-    - `400 Bad Request: Username is taken.`
+- **Responses:**
+  - `201 Created: Returns the newly created user.`
+  - `400 Bad Request: Username is taken.`
 
 
 #### Get a user by userName
