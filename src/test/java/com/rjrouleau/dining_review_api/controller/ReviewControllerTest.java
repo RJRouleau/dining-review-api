@@ -1,7 +1,9 @@
 package com.rjrouleau.dining_review_api.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rjrouleau.dining_review_api.model.Restaurant;
 import com.rjrouleau.dining_review_api.model.Review;
+import com.rjrouleau.dining_review_api.repository.RestaurantRepository;
 import com.rjrouleau.dining_review_api.repository.ReviewRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +31,9 @@ public class ReviewControllerTest {
 
     @MockBean
     private ReviewRepository reviewRepository;
+
+    @MockBean
+    private RestaurantRepository restaurantRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -256,10 +261,28 @@ public class ReviewControllerTest {
                 .status(Review.Status.ACCEPTED)
                 .build();
 
+        List<Review> reviewList = new ArrayList<>();
+        reviewList.add(updatedReview);
+
         String expectedJson = objectMapper.writeValueAsString(updatedReview);
+
+        Restaurant restaurant = Restaurant.builder()
+                .overallScore(3.0f)
+                .peanutScore(3.0f)
+                .eggScore(3.0f)
+                .dairyScore(3.0f)
+                .name("testRestaurant")
+                .city("Chicago")
+                .state("Illinois")
+                .zipcode("00005")
+                .build();
+
 
         given(reviewRepository.findById(Mockito.anyLong())).willReturn(Optional.of(review));
         given(reviewRepository.save(Mockito.any(Review.class))).willReturn(updatedReview);
+        given(reviewRepository.findByRestaurantNameAndStatus(review.getRestaurantName(), Review.Status.ACCEPTED))
+                .willReturn(reviewList);
+        given(restaurantRepository.findById(Mockito.any())).willReturn(Optional.of(restaurant));
 
         mockMvc.perform(
                 put("/reviews/admin/{id}", Mockito.anyLong())
@@ -289,6 +312,55 @@ public class ReviewControllerTest {
 
         Mockito.verify(reviewRepository, Mockito.times(1)).findById(Mockito.anyLong());
         Mockito.verify(reviewRepository, Mockito.times(0)).save(Mockito.any(Review.class));
+    }
+
+    @Test
+    public void ReviewController_UpdateReviewStatus_ReturnInternalServerError() throws Exception {
+        String updatedStatus = "accepted";
+        Review updatedReview = Review.builder()
+                .userName("testUser")
+                .restaurantName("testRestaurant")
+                .peanutScore(3)
+                .eggScore(3)
+                .dairyScore(3)
+                .commentary("This is a test review.")
+                .status(Review.Status.ACCEPTED)
+                .build();
+
+        List<Review> reviewList = new ArrayList<>();
+        reviewList.add(updatedReview);
+
+        String expectedJson = objectMapper.writeValueAsString(updatedReview);
+
+        Restaurant restaurant = Restaurant.builder()
+                .overallScore(3.0f)
+                .peanutScore(3.0f)
+                .eggScore(3.0f)
+                .dairyScore(3.0f)
+                .name("testRestaurant")
+                .city("Chicago")
+                .state("Illinois")
+                .zipcode("00005")
+                .build();
+
+
+        given(reviewRepository.findById(Mockito.anyLong())).willReturn(Optional.of(review));
+        given(reviewRepository.save(Mockito.any(Review.class))).willReturn(updatedReview);
+        given(reviewRepository.findByRestaurantNameAndStatus(review.getRestaurantName(), Review.Status.ACCEPTED))
+                .willReturn(reviewList);
+        // return Optional.empty() to mock an internal server error.
+        given(restaurantRepository.findById(Mockito.any())).willReturn(Optional.empty());
+
+        mockMvc.perform(
+                        put("/reviews/admin/{id}", Mockito.anyLong())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(updatedStatus)
+                )
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string("An error occurred while updating restaurant scores."));
+
+        Mockito.verify(reviewRepository, Mockito.times(1)).findById(Mockito.anyLong());
+        Mockito.verify(reviewRepository, Mockito.times(1)).save(Mockito.any(Review.class));
     }
 
     @Test

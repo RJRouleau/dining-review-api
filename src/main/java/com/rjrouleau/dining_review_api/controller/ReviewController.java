@@ -112,8 +112,13 @@ public class ReviewController {
         review.setStatus(reviewStatus);
         Review updatedReview = reviewRepository.save(review);
         if (reviewStatus == Review.Status.ACCEPTED){
-            updateOverallScores(updatedReview.getRestaurantName());
+            try {
+                updateRestaurantScores(review.getRestaurantId(), review.getRestaurantName());
+            } catch (Exception e) {
+                return new ResponseEntity<>("An error occurred while updating restaurant scores.", HttpStatus.INTERNAL_SERVER_ERROR);
+            }
         }
+
         return new ResponseEntity<>(updatedReview, HttpStatus.OK);
     }
 
@@ -130,62 +135,45 @@ public class ReviewController {
         return new ResponseEntity<>(review, HttpStatus.NO_CONTENT);
     }
 
-    private void updateOverallScores(String restaurantName){
-//        List<Review> reviews = reviewRepository.findByRestaurantNameAndStatus(restaurantName, Review.Status.ACCEPTED);
-//        List<Restaurant> restaurants = restaurantRepository.findByName(restaurantName);
-//        Restaurant updatedRestaurant = restaurants.getFirst();
-//
-//        Float peanutSum = 0.f;
-//        int peanutCount = 0;
-//        Float eggSum = 0.f;
-//        int eggCount = 0;
-//        Float dairySum = 0.f;
-//        int dairyCount = 0;
-//        for (Review review : reviews){
-//            if (review.getPeanutScore() != null) {
-//                peanutCount++;
-//                peanutSum += review.getPeanutScore();
-//            }
-//            if (review.getEggScore() != null) {
-//                eggCount++;
-//                eggSum += review.getEggScore();
-//            }
-//            if (review.getDairyScore() != null) {
-//                dairyCount++;
-//                dairySum += review.getDairyScore();
-//            }
-//        }
-//
-//        if (peanutCount > 0) {
-//            updatedRestaurant.setPeanutScore(peanutSum / peanutCount);
-//        } else {
-//            updatedRestaurant.setPeanutScore(null);
-//        }
-//        if (eggCount > 0){
-//            updatedRestaurant.setEggScore(eggSum / eggCount);
-//        } else {
-//            updatedRestaurant.setEggScore(null);
-//        }
-//        if (dairyCount > 0){
-//            updatedRestaurant.setDairyScore(dairySum / dairyCount);
-//        } else {
-//            updatedRestaurant.setDairyScore(null);
-//        }
-//
-//        Float overallSum = 0.f;
-//        int overallCount = 0;
-//        if (updatedRestaurant.getPeanutScore() != null){
-//            overallCount++;
-//            overallSum += updatedRestaurant.getPeanutScore();
-//        }
-//        if (updatedRestaurant.getEggScore() != null){
-//            overallCount++;
-//            overallSum += updatedRestaurant.getEggScore();
-//        }
-//        if (updatedRestaurant.getDairyScore() != null){
-//            overallCount++;
-//            overallSum += updatedRestaurant.getDairyScore();
-//        }
-//        updatedRestaurant.setOverallScore(overallSum / overallCount);
+    // Calculates the overall score as the average of available allergy scores.
+    // Used as part of the review approval process.
+    private void updateOverallScore(Restaurant restaurant) {
+        Float peanutScore = restaurant.getPeanutScore() != null ? restaurant.getPeanutScore() : 0.f;
+        Float eggScore = restaurant.getEggScore() != null ? restaurant.getEggScore() : 0.f;
+        Float dairyScore = restaurant.getDairyScore() != null ? restaurant.getDairyScore() : 0.f;
+
+        Float overallScore = (peanutScore + eggScore + dairyScore) / 3.f;
+        restaurant.setOverallScore(overallScore);
+    }
+
+    // Calculates each individual score across all approved reviews for a restaurant.
+    // Used as part of the review approval process.
+
+    private void updateRestaurantScores(Long restaurantId, String restaurantName) throws Exception {
+        List<Review> reviewList = reviewRepository.findByRestaurantNameAndStatus(restaurantName, Review.Status.ACCEPTED);
+        if (reviewList.isEmpty()) {
+            throw new Exception ("No reviews were found.");
+        }
+
+        Optional<Restaurant> restaurantOptional = restaurantRepository.findById(restaurantId);
+        if (restaurantOptional.isEmpty()){
+            throw new Exception("Restaurant was not found.");
+        }
+        Restaurant restaurant = restaurantOptional.get();
+
+        Float peanutSum = 0.f;
+        Float eggSum = 0.f;
+        Float dairySum = 0.f;
+
+        for (Review r: reviewList) {
+            peanutSum += r.getPeanutScore() != null ? r.getPeanutScore() : 0.f;
+            eggSum += r.getEggScore() != null ? r.getEggScore() : 0.f;
+            dairySum += r.getDairyScore() != null ? r.getDairyScore() : 0.f;
+        }
+
+        restaurant.setPeanutScore(peanutSum / reviewList.size());
+        restaurant.setEggScore(eggSum / reviewList.size());
+        restaurant.setDairyScore(dairySum / reviewList.size());
+        updateOverallScore(restaurant);
     }
 }

@@ -18,12 +18,13 @@ public class Review {
     @GeneratedValue
     private Long id;
 
-    private String userName;
-    private String restaurantName;
+    private String  userName;
+    private String  restaurantName;
+    private Long    restaurantId;
     private Integer peanutScore;
     private Integer eggScore;
     private Integer dairyScore;
-    private String commentary;
+    private String  commentary;
 
     public static enum Status {
         PENDING, ACCEPTED, REJECTED;

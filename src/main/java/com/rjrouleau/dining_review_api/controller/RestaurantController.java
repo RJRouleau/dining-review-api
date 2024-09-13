@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,7 +38,12 @@ public class RestaurantController {
 
     @GetMapping
     public ResponseEntity<Iterable<Restaurant>> getRestaurants() {
-        return new ResponseEntity<>(restaurantRepository.findAll(), HttpStatus.OK);
+        List<Restaurant> restaurantList = new ArrayList<>();
+        // Return restaurants with decimal place adjusted without changing score in repository.
+        restaurantRepository.findAll().forEach(restaurant -> {
+            restaurantList.add(createAdjustedScoresRestaurant(restaurant));
+        });
+        return new ResponseEntity<>(restaurantList, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
@@ -46,7 +52,10 @@ public class RestaurantController {
         if (optionalRestaurant.isEmpty()){
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        return new ResponseEntity<>(optionalRestaurant.get(), HttpStatus.OK);
+        // Return the restaurant with decimal place adjusted without changing score in repository.
+        Restaurant tempRestaurant = createAdjustedScoresRestaurant(optionalRestaurant.get());
+
+        return new ResponseEntity<>(tempRestaurant, HttpStatus.OK);
     }
 
     @GetMapping("/byzipcode/{zipcode}")
@@ -141,13 +150,30 @@ public class RestaurantController {
         return new ResponseEntity<>(restaurantTBD, HttpStatus.NO_CONTENT);
     }
 
-    // Calculates the overall score as the average of available allergy scores.
-    private void updateOverallScore(Restaurant restaurant) {
-        Float peanutScore = restaurant.getPeanutScore() != null ? restaurant.getPeanutScore() : 0.f;
-        Float eggScore = restaurant.getEggScore() != null ? restaurant.getEggScore() : 0.f;
-        Float dairyScore = restaurant.getDairyScore() != null ? restaurant.getDairyScore() : 0.f;
+    // Returns a copy of the restaurant with each score adjusted to two decimal places.
+    private Restaurant createAdjustedScoresRestaurant(Restaurant restaurant) {
+        // create a temp restaurant so that restaurants scores are not permanently changed.
+        Restaurant tempRestaurant = Restaurant.builder()
+                .overallScore(restaurant.getOverallScore())
+                .peanutScore(restaurant.getPeanutScore())
+                .eggScore(restaurant.getEggScore())
+                .dairyScore(restaurant.getDairyScore())
+                .name(restaurant.getName())
+                .city(restaurant.getCity())
+                .state(restaurant.getState())
+                .zipcode(restaurant.getZipcode())
+                .build();
 
-        Float overallScore = (peanutScore + eggScore + dairyScore) / 3.f;
-        restaurant.setOverallScore(overallScore);
+        Float adjustedPeanutScore = Float.parseFloat(String.format("%.2f", restaurant.getPeanutScore()));
+        Float adjustedEggScore = Float.parseFloat(String.format("%.2f", restaurant.getEggScore()));
+        Float adjustedDairyScore = Float.parseFloat(String.format("%.2f", restaurant.getDairyScore()));
+        Float adjustedOverallScore = Float.parseFloat(String.format("%.2f", restaurant.getOverallScore()));
+
+        restaurant.setPeanutScore(adjustedPeanutScore);
+        restaurant.setPeanutScore(adjustedEggScore);
+        restaurant.setPeanutScore(adjustedDairyScore);
+        restaurant.setPeanutScore(adjustedOverallScore);
+
+        return tempRestaurant;
     }
 }
