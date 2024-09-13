@@ -132,7 +132,6 @@ public class RestaurantController {
         AppUtils.setIfNotNull(restaurantDetails::getCity, restaurant::setCity);
         AppUtils.setIfNotNull(restaurantDetails::getState, restaurant::setState);
         AppUtils.setIfNotNull(restaurantDetails::getZipcode, restaurant::setZipcode);
-        //updateOverallScore(restaurant);
         restaurant.setOverallScore(AppUtils.calculateOverallScore(restaurant));
         Restaurant updatedRestaurant = restaurantRepository.save(restaurant);
 
